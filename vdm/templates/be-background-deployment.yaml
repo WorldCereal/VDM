@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: be-background
+  labels:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-background
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.backend.background.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: be
+      app.kubernetes.io/component: be-background
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: be
+        app.kubernetes.io/component: be-background
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.backend.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.background.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: be-background-config
+          configMap:
+            name: be-config
+        - name: mapproxy-conf
+          persistentVolumeClaim:
+            claimName: mapproxy-conf
+        - name: mapproxy-datasource
+          persistentVolumeClaim:
+            claimName: mapproxy-datasource
+        - name: mapproxy-cache
+          persistentVolumeClaim:
+            claimName: mapproxy-cache
+        - name: mapproxy-seed
+          persistentVolumeClaim:
+            claimName: mapproxy-seed
+      containers:
+        - name: be-background
+          image: "{{ .Values.backend.image }}"
+          # imagePullPolicy: Always
+          env: 
+            - name: TZ
+              value: "{{ .Values.timezone | default "UTC" }}"
+            - name: BE_PG_NORMAL_USER
+              value: "{{ .Values.postgresql.pgUsername }}"
+            - name: BE_PG_NORMAL_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.postgresql.pgSecretName }}"
+                  key: postgresql-password
+            - name: BE_PG_SUPER_USER
+              value: "{{ .Values.postgresql.pgAdminUsername }}"
+            - name: BE_PG_SUPER_PASSWD
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.postgresql.pgSecretName }}"
+                  key: postgresql-password
+            - name: BE_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.backend.awsSecret }}"
+                  key: BE_S3_SECRET_ACCESS_KEY
+            - name: BE_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.backend.awsSecret }}"
+                  key: BE_S3_ACCESS_KEY_ID
+            - name: BE_S3_VIRTUAL_HOSTING
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.backend.awsSecret }}"
+                  key: BE_S3_VIRTUAL_HOSTING
+            - name: BE_S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Values.backend.awsSecret }}"
+                  key: BE_S3_ENDPOINT
+          ports:
+            - containerPort: 9850
+          volumeMounts:
+            - name: be-background-config
+              mountPath: /usr/src/app/config.js
+              subPath: config-background.js
+              readOnly: true
+            - mountPath: /home/mapproxy/conf
+              name: mapproxy-conf
+            - mountPath: /home/mapproxy/datasource
+              name: mapproxy-datasource
+            - mountPath: /home/mapproxy/cache
+              name: mapproxy-cache
+            - mountPath: /home/mapproxy/seed
+              name: mapproxy-seed
+      restartPolicy: Always

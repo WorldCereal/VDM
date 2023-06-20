@@ -1,0 +1,122 @@
+
+domain: VALUE_HOSTNAME
+timezone: "Europe/Paris"
+
+# Single instance
+postgresql:
+  image: "CS_REGISTRY/world-cereal/gisat/postgis:13-backup"
+  imagePullSecrets:
+    - name: aws-registry
+  nodeSelector:
+    system-tag: world-cereal-system
+  pgUsername: postgres
+  # pgUserSecret: vdm-dbpasswd
+  pgAdminUsername: postgres
+  # pgAdminSecret: vdm-dbpasswd
+  pgSecretName: vdm-db
+  serviceName: pg
+  storage: 20Gi
+
+backend:
+  image: "CS_REGISTRY/world-cereal/gisat/be-core:dev11"
+  imagePullSecrets:
+    - name: aws-registry
+  awsSecret: vdm-aws
+
+  nodeSelector:
+    system-tag: world-cereal-system
+
+  # affinity:
+  #   # podAntiAffinity:
+  #   podAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       - labelSelector:
+  #           matchExpressions:
+  #             - key: app.kubernetes.io/name 
+  #               operator: In
+  #               values:
+  #                 - be
+  #         topologyKey: kubernetes.io/hostname
+
+  core:
+    replicas: 1
+    # nodeSelector:
+    #   system-tag: world-cereal-system
+
+  background:
+    replicas: 1
+
+  # Single instance
+  fixtures: {}
+
+
+mapproxy:
+  image: "CS_REGISTRY/world-cereal/gisat/mapproxy:dev2"
+  imagePullSecrets:
+    - name: aws-registry
+  # replicas: 1
+
+  nodeSelector:
+    system-tag: world-cereal-system
+  persistenceSize:
+    mapproxyConf: 100Mi
+    mapproxyCache: 500Gi
+    mapproxyDataSource: 1Gi
+    mapproxySeed: 1Gi
+  # affinity:
+  #   # podAntiAffinity:
+  #   podAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       - labelSelector:
+  #           matchExpressions:
+  #             - key: app.kubernetes.io/name 
+  #               operator: In
+  #               values:
+  #                 - mapproxy
+  #         topologyKey: kubernetes.io/hostname
+
+
+
+# Single instance
+mapproxyApi:
+  image: "CS_REGISTRY/world-cereal/gisat/mapproxy:seed-api"
+  imagePullSecrets:
+    - name: aws-registry
+
+  nodeSelector:
+    system-tag: world-cereal-system
+  # affinity:
+  #   # podAntiAffinity:
+  #   podAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       - labelSelector:
+  #           matchExpressions:
+  #             - key: app.kubernetes.io/name 
+  #               operator: In
+  #               values:
+  #                 - mapproxy
+  #         topologyKey: kubernetes.io/hostname
+
+
+
+frontend:
+  image: "CS_REGISTRY/world-cereal/gisat/app-esa_world_cereal_product_viewer:dev6"
+  imagePullSecrets:
+    - name: aws-registry
+  # replicas: 1
+  nodeSelector:
+    system-tag: world-cereal-system
+
+redis:
+  image: "redis"
+  nodeSelector:
+    system-tag: world-cereal-system
+
+
+
+
+
+
+
+
+

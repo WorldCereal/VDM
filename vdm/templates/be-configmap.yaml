@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: be-config
+  labels:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  config.js: |
+    {{- tpl (.Files.Get "config/be/config.js") $ | nindent 4 }}
+  config-background.js: |
+    {{- tpl (.Files.Get "config/be/config-background.js") $ | nindent 4 }}
+  config-fixtures.js: |
+    {{- tpl (.Files.Get "config/be/config-fixtures.js") $ | nindent 4 }}

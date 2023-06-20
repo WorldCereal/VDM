@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mapproxy
+  labels:
+    app.kubernetes.io/name: mapproxy
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.mapproxy.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mapproxy
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mapproxy
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.mapproxy.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mapproxy.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.mapproxy.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: mapproxy-conf
+          persistentVolumeClaim:
+            claimName: mapproxy-conf
+        - name: mapproxy-datasource
+          persistentVolumeClaim:
+            claimName: mapproxy-datasource
+        - name: mapproxy-cache
+          persistentVolumeClaim:
+            claimName: mapproxy-cache
+        - name: mapproxy-seed
+          persistentVolumeClaim:
+            claimName: mapproxy-seed
+      initContainers:
+        - name: volume-permissions
+          image: busybox
+          command: ["sh", "-c", "chown 1000:root /home/mapproxy/*"]
+          volumeMounts:
+            - mountPath: /home/mapproxy/datasource
+              name: mapproxy-datasource
+            - mountPath: /home/mapproxy/cache
+              name: mapproxy-cache
+            - mountPath: /home/mapproxy/seed
+              name: mapproxy-seed
+      containers:
+        - name: mapproxy
+          image: "{{ .Values.mapproxy.image }}"
+          # imagePullPolicy: Always
+          ports:
+            - containerPort: 9850
+          volumeMounts:
+            - mountPath: /home/mapproxy/conf
+              name: mapproxy-conf
+            - mountPath: /home/mapproxy/datasource
+              name: mapproxy-datasource
+            - mountPath: /home/mapproxy/cache
+              name: mapproxy-cache
+            - mountPath: /home/mapproxy/seed
+              name: mapproxy-seed
+      restartPolicy: Always

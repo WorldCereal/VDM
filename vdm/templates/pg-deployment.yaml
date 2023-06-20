@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg
+  labels:
+    app.kubernetes.io/name: pg
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  # "Should be run as single instance"
+  # replicas: {{ .Values.postgresql.replicas | default 1 }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pg
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  # strategy:
+  #   type: Recreate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pg
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      {{- with .Values.postgresql.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.postgresql.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.postgresql.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: pg-data
+          persistentVolumeClaim:
+            claimName: pg-data
+        - name: pg-config
+          configMap:
+            name: pg-config
+      initContainers:
+        - name: init-myservice
+          image: alpine:latest
+          command: ['ash', '-c', "rm -rf /var/lib/postgresql/data/lost+found"]
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: pg-data
+      containers:
+        - name: pg
+          image: "{{ .Values.postgresql.image | default "postgres:latest" }}"
+          args:
+            - postgres
+            - -c
+            - config_file=/etc/postgresql/postgresql.conf
+          env:
+            - name: TZ
+              value: "{{ .Values.timezone }}"
+            - name: POSTGRES_CONFIG
+              value: /etc/postgresql/postgresql.conf
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.pgSecretName }}
+                  key: postgresql-password
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: pg-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+              readOnly: true
+            - name: pg-data
+              mountPath: /var/lib/postgresql/data
+      restartPolicy: Always

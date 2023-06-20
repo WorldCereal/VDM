@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mapproxy-api
+  labels:
+    app.kubernetes.io/name: mapproxy-api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app.kubernetes.io/name: mapproxy-api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: mapproxy-api
+      port: 9870
+      targetPort: 9870

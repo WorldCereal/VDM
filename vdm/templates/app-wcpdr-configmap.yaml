@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-wcpdr-config
+  labels:
+    app.kubernetes.io/name: app-wcpdr
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  runtimeConfig.js: |
+    {{- tpl (.Files.Get "config/app-wcpdr/runtimeConfig.js") $ | nindent 4 }}

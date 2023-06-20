@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: be
+  labels:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-core
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-core
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: be
+      port: 9850
+      targetPort: 9850
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: be-background
+  labels:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-background
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-background
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: be
+      port: 9850
+      targetPort: 9850
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: be-fixtures
+  labels:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-fixtures
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app.kubernetes.io/name: be
+    app.kubernetes.io/component: be-fixtures
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: be
+      port: 9850
+      targetPort: 9850
